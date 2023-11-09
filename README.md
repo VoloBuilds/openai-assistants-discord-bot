@@ -4,7 +4,7 @@ In this repo we integrate Discord.js with the new OpenAI Assistants API. The bot
 
 ## Video Guide
 View the full tutorial and explanation of concepts here:
-
+https://youtu.be/5TU_wOC0dmw
 
 ## Features
 
