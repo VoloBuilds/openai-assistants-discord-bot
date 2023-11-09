@@ -53,7 +53,7 @@ const statusCheckLoop = async (openAiThreadId, runId) => {
 }
 
 const addMessage = (threadId, content) => {
-    console.log(content);
+    // console.log(content);
     return openai.beta.threads.messages.create(
         threadId,
         { role: "user", content }
@@ -75,17 +75,25 @@ client.on('messageCreate', async message => {
         if(message.channel.isThread()){
             //Gather all thread messages to fill out the OpenAI thread since we haven't seen this one yet
             const starterMsg = await message.channel.fetchStarterMessage();
-            const additionalMsgs = await message.channel.messages.fetch();
-            const messages = [starterMsg, ...additionalMsgs].filter(msg => !!msg.content && msg.content !== '');
+            const otherMessagesRaw = await message.channel.messages.fetch();
+
+            const otherMessages = Array.from(otherMessagesRaw.values())
+                .map(msg => msg.content)
+                .reverse(); //oldest first
+
+            const messages = [starterMsg.content, ...otherMessages]
+                .filter(msg => !!msg && msg !== '')
 
             // console.log(messages);
-            await Promise.all(messages.map(msg => addMessage(openAiThreadId, msg.content)));
+            await Promise.all(messages.map(msg => addMessage(openAiThreadId, msg)));
             messagesLoaded = true;
         }
     }
 
     // console.log(openAiThreadId);
-    await addMessage(openAiThreadId, message.content);
+    if(!messagesLoaded){ //If this is for a thread, assume msg was loaded via .fetch() earlier
+        await addMessage(openAiThreadId, message.content);
+    }
 
     const run = await openai.beta.threads.runs.create(
         openAiThreadId,
@@ -94,7 +102,9 @@ client.on('messageCreate', async message => {
     const status = await statusCheckLoop(openAiThreadId, run.id);
 
     const messages = await openai.beta.threads.messages.list(openAiThreadId);
-    const response = messages.data[0].content[0].text.value;
+    let response = messages.data[0].content[0].text.value;
+    response = response.substring(0, 1999) //Discord msg length limit when I was testing
+
     console.log(response);
     
     message.reply(response);
