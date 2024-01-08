@@ -8,7 +8,7 @@ const openai = new OpenAI({
 
 // Discord Client
 const client = new Client({
-  intents: [
+    intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
@@ -29,7 +29,9 @@ const threadMap = {};
 
 const getOpenAiThreadId = (discordThreadId) => {
     // Replace this in-memory implementation with a database (e.g. DynamoDB, Firestore, Redis)
-    return threadMap[discordThreadId];
+    console.log(process.env.OPENAI_THREAD_ID);
+    return process.env.OPENAI_THREAD_ID;// todo: return session base on channel or user id
+    // return threadMap[discordThreadId];
 }
 
 const addThreadToMap = (discordThreadId, openAiThreadId) => {
@@ -43,7 +45,7 @@ const statusCheckLoop = async (openAiThreadId, runId) => {
         runId
     );
 
-    if(terminalStates.indexOf(run.status) < 0){
+    if (terminalStates.indexOf(run.status) < 0) {
         await sleep(1000);
         return statusCheckLoop(openAiThreadId, runId);
     }
@@ -68,11 +70,11 @@ client.on('messageCreate', async message => {
     let openAiThreadId = getOpenAiThreadId(discordThreadId);
 
     let messagesLoaded = false;
-    if(!openAiThreadId){
+    if (!openAiThreadId) {
         const thread = await openai.beta.threads.create();
         openAiThreadId = thread.id;
         addThreadToMap(discordThreadId, openAiThreadId);
-        if(message.channel.isThread()){
+        if (message.channel.isThread()) {
             //Gather all thread messages to fill out the OpenAI thread since we haven't seen this one yet
             const starterMsg = await message.channel.fetchStarterMessage();
             const otherMessagesRaw = await message.channel.messages.fetch();
@@ -91,8 +93,10 @@ client.on('messageCreate', async message => {
     }
 
     // console.log(openAiThreadId);
-    if(!messagesLoaded){ //If this is for a thread, assume msg was loaded via .fetch() earlier
-        await addMessage(openAiThreadId, message.content);
+    if (!messagesLoaded) { //If this is for a thread, assume msg was loaded via .fetch() 
+        let tagedMessage = `ID: <${message.author.id}> Name: ${message.author.globalName} saids:  ${message.content}`;
+        console.log(tagedMessage);
+        await addMessage(openAiThreadId, tagedMessage);
     }
 
     const run = await openai.beta.threads.runs.create(
@@ -106,7 +110,7 @@ client.on('messageCreate', async message => {
     response = response.substring(0, 1999) //Discord msg length limit when I was testing
 
     console.log(response);
-    
+
     message.reply(response);
 });
 
