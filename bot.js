@@ -92,7 +92,6 @@ client.on('messageCreate', async message => {
     const discordThreadId = message.channel.id;
     let openAiThreadId = getOpenAiThreadId(discordThreadId);
     let messagesLoaded = false;
-    let success = true;
 
     if (!openAiThreadId) {
         const thread = await openai.beta.threads.create();
@@ -117,13 +116,13 @@ client.on('messageCreate', async message => {
     }
 
     // console.log(openAiThreadId);
+    let userMessage = "";
     if (!messagesLoaded) { //If this is for a thread, assume msg was loaded via .fetch() 
-        let tagedMessage = `ID: <${message.author.id}> Name: ${message.author.globalName} saids:  ${message.content}`;
-        // console.log(tagedMessage);
+        userMessage = `ID: <${message.author.id}> Name: ${message.author.globalName} saids:  ${message.content}`;
+        // console.log(userMessage);
         try {
-            await addMessage(openAiThreadId, tagedMessage);
+            await addMessage(openAiThreadId, userMessage);
         } catch (error) {
-            success = false;
             console.log("error:", error);
             let errorRunID = error.error.message.slice(66, 94);
             let cancelRun = await openai.beta.threads.runs.cancel(openAiThreadId, errorRunID);
@@ -131,9 +130,9 @@ client.on('messageCreate', async message => {
             const messages = await openai.beta.threads.messages.list(openAiThreadId);
             let response = messages.data[0].content[0].text.value;
             response = response.substring(0, 1999) //Discord msg length limit when I was testing
-            console.log("cancelRespond", response);
-            console.log("newaddedMessage", `${response}\n${tagedMessage}`)
-            await addMessage(openAiThreadId, `${response}\n${tagedMessage}`);
+            console.log("canceledRespond", response);
+            console.log("multi-User:", `${response}\n${userMessage}`)
+            await addMessage(openAiThreadId, `${response}\n${userMessage}`);
 
         }
     }
@@ -143,16 +142,20 @@ client.on('messageCreate', async message => {
         { assistant_id: process.env.ASSISTANT_ID }
     )
     const status = await statusCheckLoop(openAiThreadId, run.id);
-    // const status = await statusCheckLoop(openAiThreadId, "run_WEmxr916mMplz0scd2JUcaxX");
-    // console.log(status);
 
-    if (success) {
-        const messages = await openai.beta.threads.messages.list(openAiThreadId);
-        let response = messages.data[0].content[0].text.value;
-        response = response.substring(0, 1999) //Discord msg length limit when I was testing
-        console.log(response);
-        message.reply(response);
+    const messages = await openai.beta.threads.messages.list(openAiThreadId);
+    let response = messages.data[0].content[0].text.value;
+    response = response.substring(0, 1999) //Discord msg length limit when I was testing
+
+    let isCanceled = response.includes(userMessage);
+    if (!isCanceled) {
+        console.log("AI:", response);
+        if (response.length != 0) {
+            message.reply(response);
+        }
     }
+
+
 });
 
 
