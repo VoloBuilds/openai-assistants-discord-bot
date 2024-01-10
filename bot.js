@@ -1,6 +1,8 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { OpenAI } = require("openai");
 require("dotenv").config();
+const { get_weather, get_time } = require("./tools_for_ai.js");
+const toolbox = { get_weather: get_weather, get_time: get_time };
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
@@ -24,13 +26,12 @@ client.once('ready', () => {
     console.log('Bot is ready!');
 });
 
-
 const threadMap = {};
 
 const getOpenAiThreadId = (discordThreadId) => {
     // Replace this in-memory implementation with a database (e.g. DynamoDB, Firestore, Redis)
     console.log(process.env.OPENAI_THREAD_ID);
-    return process.env.OPENAI_THREAD_ID;// todo: return session base on channel or user id
+    return process.env.OPENAI_THREAD_ID;
     // return threadMap[discordThreadId];
 }
 
@@ -44,6 +45,28 @@ const statusCheckLoop = async (openAiThreadId, runId) => {
         openAiThreadId,
         runId
     );
+    // console.log(run.status);
+
+    if (run.status == "requires_action") {
+        // console.log(run.required_action);
+        const tool_outputs = run.required_action.submit_tool_outputs.tool_calls.map((callDetails) => {
+            let callId = callDetails.id;
+            const result = toolbox[callDetails.function.name](JSON.parse(callDetails.function.arguments));
+            return {
+                tool_call_id: callId,
+                output: result
+            }
+        })
+        // console.log(tool_outputs);
+        const output_run = await openai.beta.threads.runs.submitToolOutputs(
+            openAiThreadId,
+            runId,
+            {
+                tool_outputs: tool_outputs
+            }
+        );
+    }
+
 
     if (terminalStates.indexOf(run.status) < 0) {
         await sleep(1000);
@@ -62,14 +85,14 @@ const addMessage = (threadId, content) => {
     )
 }
 
+
 // This event will run every time a message is received
 client.on('messageCreate', async message => {
     if (message.author.bot || !message.content || message.content === '') return; //Ignore bot messages
-    // console.log(message);
     const discordThreadId = message.channel.id;
     let openAiThreadId = getOpenAiThreadId(discordThreadId);
-
     let messagesLoaded = false;
+
     if (!openAiThreadId) {
         const thread = await openai.beta.threads.create();
         openAiThreadId = thread.id;
@@ -95,7 +118,7 @@ client.on('messageCreate', async message => {
     // console.log(openAiThreadId);
     if (!messagesLoaded) { //If this is for a thread, assume msg was loaded via .fetch() 
         let tagedMessage = `ID: <${message.author.id}> Name: ${message.author.globalName} saids:  ${message.content}`;
-        console.log(tagedMessage);
+        // console.log(tagedMessage);
         await addMessage(openAiThreadId, tagedMessage);
     }
 
@@ -104,6 +127,8 @@ client.on('messageCreate', async message => {
         { assistant_id: process.env.ASSISTANT_ID }
     )
     const status = await statusCheckLoop(openAiThreadId, run.id);
+    // const status = await statusCheckLoop(openAiThreadId, "run_WEmxr916mMplz0scd2JUcaxX");
+    // console.log(status);
 
     const messages = await openai.beta.threads.messages.list(openAiThreadId);
     let response = messages.data[0].content[0].text.value;
@@ -113,6 +138,7 @@ client.on('messageCreate', async message => {
 
     message.reply(response);
 });
+
 
 // Authenticate Discord
 client.login(process.env.DISCORD_TOKEN);
