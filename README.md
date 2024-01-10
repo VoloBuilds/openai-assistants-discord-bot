@@ -66,7 +66,7 @@ https://youtu.be/5TU_wOC0dmw
 Feel free to fork the repository and submit pull requests.
 
 ## Recent Updates
-[https://github.com/DonChong2000/TodayILearn/blob/main/discordAI-dev-note.md](discordAI-dev-note.md)
+[discordAI-dev-note.md](https://github.com/DonChong2000/TodayILearn/blob/main/discordAI-dev-note.md)
 
 ## License
 
