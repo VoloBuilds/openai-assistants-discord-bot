@@ -1,8 +1,8 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { OpenAI } = require("openai");
 require("dotenv").config();
-const { get_weather, get_time } = require("./tools_for_ai.js");
-const toolbox = { get_weather: get_weather, get_time: get_time };
+const { get_weather, get_time, get_lonLat, get_tarkov_market } = require("./tools_for_ai.js");
+const toolbox = { get_weather: get_weather, get_time: get_time, get_lonLat, get_tarkov_market: get_tarkov_market };
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
@@ -16,6 +16,7 @@ const client = new Client({
         GatewayIntentBits.MessageContent
     ]
 });
+
 
 const sleep = (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -45,24 +46,28 @@ const statusCheckLoop = async (openAiThreadId, runId) => {
         openAiThreadId,
         runId
     );
-    // console.log(run.status);
+    console.log(run.status);
 
     if (run.status == "requires_action") {
         // console.log(run.required_action);
-        const tool_outputs = run.required_action.submit_tool_outputs.tool_calls.map((callDetails) => {
+
+        const tool_outputs_promises = await run.required_action.submit_tool_outputs.tool_calls.map(async (callDetails) => {
             let callId = callDetails.id;
-            const result = toolbox[callDetails.function.name](JSON.parse(callDetails.function.arguments));
+            console.log("AI called:", callDetails.function.name);
+            const result = await toolbox[callDetails.function.name](JSON.parse(callDetails.function.arguments));
+            console.log(callId, await result, JSON.stringify(await result));
             return {
                 tool_call_id: callId,
-                output: result
+                output: JSON.stringify(await result)
             }
         })
-        // console.log(tool_outputs);
+
+        console.log(await Promise.all(tool_outputs_promises));
         const output_run = await openai.beta.threads.runs.submitToolOutputs(
             openAiThreadId,
             runId,
             {
-                tool_outputs: tool_outputs
+                tool_outputs: await Promise.all(tool_outputs_promises)
             }
         );
     }
