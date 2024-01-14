@@ -25,36 +25,47 @@
 */
 
 
-// const get_weather = (args) => {
-//     console.log("get_weather was called");
-//     let location = args.location || "HongKong";
-//     let unit = args.unit || "c";
-//     return { "success": true, "location": location, "temperature": "18", "unit": unit };
-// };
+const simple_get_weather = (args) => {
+  console.log("get_weather was called");
+  let location = args.location || "HongKong";
+  let unit = args.unit || "c";
+  return { "success": true, "location": location, "temperature": "18", "unit": unit };
+};
 
-const { get_lonLat } = require("./get_lonLat.js");
+const { get_coordinate } = require("./get_coordinate.js");
 require("dotenv").config();
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
 
-const get_weather = async (args) => {
+const real_get_weather = async (args) => {
   console.log("get_time was called");
-  let geocode = (await get_lonLat(args));
-  let time = (new Date).getTime();
-  let targetTime = null;
 
   try {
-    console.log("geocode:", await geocode);
-    const respond = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${geocode.latitude}&lon=${geocode.longitude}&units=metric&appid=${process.env.OPENWEATHER_API_KEY}`)
-    const json = (await respond).json();
-    return json;
+    // Default values
+    const { location = "Hong Kong", unit = "c" } = args;
+    let geoInfo = await get_coordinate({ location });
+    if (geoInfo.error) { throw new Error(geoInfo.error); }
+
+    let { latitude, longitude } = geoInfo;
+    const respond = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${OPENWEATHER_API_KEY}`);
+
+    return await respond.json();
   } catch (error) {
-    console.log("Error:", error);
-    return { error: error.toString() };
+    console.log("Error:", error.message);
+    return { error: error.message };
   }
 
 };
 
+
+let get_weather = simple_get_weather;
+if (!OPENWEATHER_API_KEY) {
+  console.error("Open Weather API key is not set. Using simple_get_weather(), Set the OPENWEATHER_API_KEY environment variable to use real_get_weather() \n To obtain the API, Check https://openweathermap.org/price");
+} else {
+  get_weather = real_get_weather;
+}
+
 // const test = async () => {
-//     console.log("test:", await get_weather({ location: "Hong Kong" }));
+//   console.log("test get_weather:", await get_weather({ location: "hongKong" }));
 // }
 // test();
 

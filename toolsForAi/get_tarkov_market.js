@@ -1,4 +1,22 @@
+/* The function description in openai
 
+{
+  "name": "get_tarkov_market",
+  "description": "Get the 24 hour average price of an item by given item name",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "itemName": {
+        "type": "string",
+        "description": "the name of the item"
+      }
+    },
+    "required": [
+      "itemName"
+    ]
+  }
+}
+*/
 const nameDict = require("./tarkovNameDict.json");
 
 const get_tarkov_market = async (args) => {
@@ -21,19 +39,18 @@ const get_tarkov_market = async (args) => {
             }
         }`})
         })
-        const json = (await respond).json();
-        return json;
+        return await respond.json();
 
 
     } catch (error) {
         console.log("Error:", error);
-        return { error: error.toString() };
+        return { error: error.message };
     }
 
 };
 
 // const test = async () => {
-//     console.log("test:", JSON.stringify(await get_tarkov_market({ itemName: "Tor-2" })));
+//     console.log("test get_tarkov_market:", JSON.stringify(await get_tarkov_market({ itemName: "Tor-2" })));
 // }
 // test();
 
