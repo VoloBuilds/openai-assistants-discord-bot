@@ -1,25 +1,20 @@
 // ref: https://github.com/fent/node-ytdl-core/blob/master/example/captions.js
 
-
-const fs = require('fs');
-const path = require('path');
 const https = require('https');
 const ytdl = require('ytdl-core');
+const { JSDOM } = require("jsdom");
 
 // Can be xml, ttml, vtt, srv1, srv2, srv3
-const format = 'srv3';
+const format = 'xml';
 
-const extractTextSRV3Contents = (input) => {
-    const pattern = /<p[^>]*>(.*?)<\/p>/g;
-    const matches = input.matchAll(pattern);
-    const textContents = [];
-  
-    for (const match of matches) {
-      textContents.push(match[1].replace(/\\n/g, " "));
-    }
-  
-    return textContents;
-  };
+const extract = (caption) => {
+    const dom = new JSDOM(caption, { contentType: "text/xml" });
+    let cleanCaption = "";
+    dom.window.document.querySelectorAll("text").forEach((e) => {
+        cleanCaption += ` ${e.textContent}`;
+    })
+    return cleanCaption;
+}
 
 const fetchData = (url) => {
     return new Promise((resolve, reject) => {
@@ -47,13 +42,12 @@ const get_yt = async (args) => {
         const tracks = info.player_response.captions?.playerCaptionsTracklistRenderer.captionTracks;
 
         if (tracks && tracks.length) {
-            const availLangCode = tracks.map(t=>t.languageCode);
+            const availLangCode = tracks.map(t => t.languageCode);
             const track = tracks.find((t) => t.languageCode === lang);
             if (track) {
-                console.log('Retrieving captions:', track.name.simpleText);
                 const data = await fetchData(`${track.baseUrl}&fmt=${format !== 'xml' ? format : ''}`);
-                const cleanData = extractTextSRV3Contents(JSON.stringify(data));
-                return {caption: JSON.stringify(cleanData)};
+                const cleanData = extract(data);
+                return { caption: cleanData };
             } else {
                 throw new Error(`Try use language code: ${JSON.stringify(availLangCode)} instead`);
             }
@@ -63,12 +57,12 @@ const get_yt = async (args) => {
 
     } catch (error) {
         console.error('Error:', error.message);
-        return {error: error.message};
+        return { error: error.message };
     }
 };
 
-// get_yt({link: "https://www.youtube.com/watch?v=QRS8MkLhQmM", lang: "en"}).then((res) => {
-//     console.log("res:",res);
+// get_yt({ link: "https://www.youtube.com/watch?v=HkagM7FVpic&ab_channel=SoftwareChats", lang: "en" }).then((res) => {
+//     console.log("res:", res);
 // })
 
 module.exports = { get_yt };
