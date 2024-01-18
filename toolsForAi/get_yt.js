@@ -52,7 +52,8 @@ const get_yt = async (args) => {
                 throw new Error(`Try use language code: ${JSON.stringify(availLangCode)} instead`);
             }
         } else {
-            throw new Error(`No captions found for this video, cannot retrive content`);
+            throw new Error(`No captions found , Use get_yt_byWhisper instead`);
+            // Use Whisper to obtain caption.
         }
 
     } catch (error) {
