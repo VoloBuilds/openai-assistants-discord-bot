@@ -2,7 +2,6 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const { OpenAI } = require("openai");
 require("dotenv").config();
 const toolbox = require("./tools_for_ai.js");
-
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });

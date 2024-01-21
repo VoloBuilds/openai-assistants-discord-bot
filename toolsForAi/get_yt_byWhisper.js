@@ -10,7 +10,7 @@ const openai = new OpenAI({
 const get_yt_byWhisper = async (args) => {
     let link = args.link;
 
-    const output = path.resolve(`./abc.mp3`);
+    const output = path.resolve(`./.cache.mp3`);
     const video = ytdl(link, { filter: 'audioonly' });
     const writeStream = fs.createWriteStream(output);
     video.pipe(writeStream);

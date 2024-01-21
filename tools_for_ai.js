@@ -1,8 +1,21 @@
-const { get_time } = require("./toolsForAi/get_time.js");
-const { get_weather } = require("./toolsForAi/get_weather.js");
-const { get_coordinate } = require("./toolsForAi/get_coordinate.js");
-const { get_tarkov_market } = require("./toolsForAi/get_tarkov_market.js");
-const { get_yt } = require("./toolsForAi/get_yt.js");
-const { get_yt_byWhisper } = require("./toolsForAi/get_yt_byWhisper.js");
+const fs = require('fs');
+const path = require('path');
 
-module.exports = { get_time, get_weather, get_coordinate, get_tarkov_market, get_yt, get_yt_byWhisper };
+const folderPath = path.join(__dirname, './toolsForAi');
+const exportedModules = {};
+
+fs.readdirSync(folderPath).forEach(file => {
+    if (file.endsWith('.js')) {
+        try {
+            const moduleName = path.parse(file).name;
+            const modulePath = path.join(folderPath, file);
+            exportedModules[moduleName] = require(modulePath)[moduleName];
+        } catch (error) {
+            console.error(`Failed to load module ${file}: ${error.message}`);
+        }
+    }
+});
+
+// console.log(exportedModules);
+
+module.exports = exportedModules;
