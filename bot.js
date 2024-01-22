@@ -1,7 +1,9 @@
 const { Client, GatewayIntentBits } = require('discord.js');
+const toolbox = require("./tools_for_ai.js");
+const { transcribe } = require('./libs/transcribe.js');
+
 const { OpenAI } = require("openai");
 require("dotenv").config();
-const toolbox = require("./tools_for_ai.js");
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
@@ -53,7 +55,7 @@ const statusCheckLoop = async (openAiThreadId, runId) => {
                 let callId = callDetails.id;
                 console.log("AI called:", callDetails.function.name);
                 const result = await toolbox[callDetails.function.name](JSON.parse(callDetails.function.arguments));
-                console.log(callId, await result, JSON.stringify(await result));
+                // console.log(callId, await result, JSON.stringify(await result));
                 return {
                     tool_call_id: callId,
                     output: JSON.stringify(await result)
@@ -96,7 +98,12 @@ const addMessage = (threadId, content) => {
 
 // This event will run every time a message is received
 client.on('messageCreate', async message => {
-
+    // Process attatchments
+    if(message.attachments.size){
+        // if audio file:
+        message.content += " " + await transcribe(message.attachments.values().next().value.attachment);
+        console.log("contetn",message.content);
+    }
     if (message.author.bot || !message.content || message.content === '') return; //Ignore bot messages
     // console.log(message);
     const discordThreadId = message.channel.id;
@@ -128,6 +135,7 @@ client.on('messageCreate', async message => {
     // console.log(openAiThreadId);
     if (!messagesLoaded) { //If this is for a thread, assume msg was loaded via .fetch() 
         userMessage = `ID: <${message.author.id}> Name: ${message.author.globalName} saids:  ${message.content}`;
+        console.log(userMessage);
         try {
             await addMessage(openAiThreadId, userMessage);
         } catch (error) {
