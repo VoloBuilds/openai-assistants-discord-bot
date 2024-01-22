@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const toolbox = require("./tools_for_ai.js");
-const { transcribe } = require('./libs/transcribe.js');
+const {voice2text} = require('./libs/voice2text.js');
 
 const { OpenAI } = require("openai");
 require("dotenv").config();
@@ -101,7 +101,7 @@ client.on('messageCreate', async message => {
     // Process attatchments
     if(message.attachments.size){
         // if audio file:
-        message.content += " " + await transcribe(message.attachments.values().next().value.attachment);
+        message.content += " " + await voice2text(message.attachments.values().next().value.attachment);
         console.log("contetn",message.content);
     }
     if (message.author.bot || !message.content || message.content === '') return; //Ignore bot messages
