@@ -36,11 +36,11 @@ const options = {
 
 const geocoder = NodeGeocoder(options);
 
-const real_get_coordinate = async (args) => {
+const real_get_coordinate = async ({location}) => {
     console.log("get_coordinate was called");
 
     try {
-        const [geoInfo] = await geocoder.geocode(args.location);
+        const [geoInfo] = await geocoder.geocode(location);
         if (!geoInfo) { throw new Error("Geocode information not found, try search other names"); }
         return { latitude: geoInfo.latitude, longitude: geoInfo.longitude }; //stript useless info to save tokens
 

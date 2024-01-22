@@ -33,9 +33,7 @@ const fetchData = (url) => {
     });
 };
 
-const get_yt = async (args) => {
-    const link = args.link;
-    const lang = args.lang;
+const get_yt = async ({link,lang}) => {
 
     try {
         const info = await ytdl.getInfo(link);

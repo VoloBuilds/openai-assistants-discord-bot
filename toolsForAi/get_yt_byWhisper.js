@@ -7,9 +7,7 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-const get_yt_byWhisper = async (args) => {
-    let link = args.link;
-
+const get_yt_byWhisper = async ({link}) => {
     const output = path.resolve(`./.cache.mp3`);
     const video = ytdl(link, { filter: 'audioonly' });
     const writeStream = fs.createWriteStream(output);

@@ -19,11 +19,11 @@
 */
 const nameDict = require("./tarkovNameDict.json");
 
-const get_tarkov_market = async (args) => {
+const get_tarkov_market = async ({itemName}) => {
     console.log("get_tarkov_market was called");
-    console.log(args.itemName)
+    console.log(itemName)
     try {
-        console.log(nameDict[(args.itemName)]);
+        console.log(nameDict[(itemName)]);
         const respond = await fetch('https://api.tarkov.dev/graphql', {
             method: 'POST',
             headers: {
@@ -32,7 +32,7 @@ const get_tarkov_market = async (args) => {
             },
             body: JSON.stringify({
                 query: `{
-            items(name: "${nameDict[args.itemName]}") {
+            items(name: "${nameDict[itemName]}") {
                 name
                 shortName
                 avg24hPrice
