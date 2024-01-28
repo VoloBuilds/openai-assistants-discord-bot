@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const toolbox = require("./tools_for_ai.js");
-const {voice2text} = require('./libs/voice2text.js');
+const {attachmentParser} = require('./libs/attachmentParser.js');
 
 const { OpenAI } = require("openai");
 require("dotenv").config();
@@ -100,10 +100,16 @@ const addMessage = (threadId, content) => {
 client.on('messageCreate', async message => {
     // Process attatchments
     if(message.attachments.size){
-        // if audio file:
-        message.content += " " + await voice2text(message.attachments.values().next().value.attachment);
-        console.log("contetn",message.content);
+
+        const attachmentContents = Promise.all(message.attachments.map(async(info)=>{
+            const type = info.contentType;
+            const url = info.url;
+            return `\n attachment: "${await attachmentParser(type, url)}"`;
+        }));
+        message.content += (await attachmentContents).join('\n');
+        console.log(message.content);
     }
+
     if (message.author.bot || !message.content || message.content === '') return; //Ignore bot messages
     // console.log(message);
     const discordThreadId = message.channel.id;
@@ -161,7 +167,10 @@ client.on('messageCreate', async message => {
 
     const messages = await openai.beta.threads.messages.list(openAiThreadId);
     let response = messages.data[0].content[0].text.value;
+
+
     response = response.substring(0, 1999) //Discord msg length limit when I was testing
+    // Todo: send two message if message too long
 
     let isCanceled = response.includes(userMessage); // Canceled respond contain original message, idk if theres is a better way.
     if (!isCanceled) {

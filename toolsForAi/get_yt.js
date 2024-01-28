@@ -3,6 +3,7 @@
 const https = require('https');
 const ytdl = require('ytdl-core');
 const { JSDOM } = require("jsdom");
+const {get_yt_byWhisper} = require("./get_yt_byWhisper");
 
 // Can be xml, ttml, vtt, srv1, srv2, srv3
 const format = 'xml';
@@ -47,11 +48,10 @@ const get_yt = async ({link,lang}) => {
                 const cleanData = extract(data);
                 return { caption: cleanData };
             } else {
-                throw new Error(`Try use language code: ${JSON.stringify(availLangCode)} instead`);
+                throw new Error(`Use lang, language code: ${JSON.stringify(availLangCode)} instead`);
             }
         } else {
-            throw new Error(`No captions found , Use get_yt_byWhisper instead`);
-            // Use Whisper to obtain caption.
+            return await get_yt_byWhisper({link});
         }
 
     } catch (error) {
