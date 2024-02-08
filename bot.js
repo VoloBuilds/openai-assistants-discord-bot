@@ -169,13 +169,13 @@ client.on('messageCreate', async message => {
     let response = messages.data[0].content[0].text.value;
 
 
-    response = response.substring(0, 1999) //Discord msg length limit when I was testing
     // Todo: send two message if message too long
 
     let isCanceled = response.includes(userMessage); // Canceled respond contain original message, idk if theres is a better way.
     if (!isCanceled) {
         console.log("AI:", response);
         if (response) {
+            response = response.substring(0, 1999) //Discord msg length limit when I was testing
             message.reply(response);
         }
     }
